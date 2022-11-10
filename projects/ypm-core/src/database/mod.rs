@@ -10,12 +10,16 @@ use uuid::Uuid;
 use yggdrasil_error::YggdrasilResult;
 
 pub struct PackageObjectManager {
-    database: Db,
-    phantom_dict: PhantomData<BTreeMap<Uuid, PackageObject>>,
+    database: PersistenceMap<Uuid, PackageObject>
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PackageObject {}
+
+pub struct PersistenceMap<K, V> {
+    database: Db,
+    typed: PhantomData<(K, V)>,
+}
 
 impl Drop for PackageObjectManager {
     fn drop(&mut self) {
@@ -27,6 +31,32 @@ impl Drop for PackageObjectManager {
                 eprintln!("FilesManager drop error. {e}")
             }
         }
+    }
+}
+
+impl<K, V> PersistenceMap<K, V> {
+    pub fn new(dir: &Path, name: &str) -> YggdrasilResult<Self> {
+        let path = dir.join(name);
+        let database = Config::default().use_compression(true).path(path).open()?;
+        Ok(Self {
+            database,
+            typed: Default::default()
+        })
+    }
+    pub fn get(&self, key: K) -> Option<V> {
+        let value = self.database.get(key).ok()??;
+        Self::from_iv(value)
+    }
+    pub fn insert(&self, key: K, value: V) -> Option<V> {
+        let value = to_vec(&value, Endian::Little).ok()?;
+        let value = self.database.insert(key, value).ok()??;
+        Self::from_iv(value)
+    }
+    pub async fn flush(&self) -> YggdrasilResult<usize> {
+        Ok(self.database.flush_async().await?)
+    }
+    fn from_iv(s: IVec) -> Option<V> {
+        from_slice(s.as_ref(), Endian::Little).ok()
     }
 }
 

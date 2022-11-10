@@ -1,0 +1,28 @@
+[package]
+name = "disk-map"
+version = "0.0.0"
+authors = ["Aster <192607617@qq.com>"]
+description = "Dictionaries stored on the hard disk"
+repository = "https://github.com/ygg-lang/yggdrasil-package-manager"
+#documentation = "https://docs.rs/sub_projects"
+readme = "Readme.md"
+license = "MPL-2.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.21.2", features = ["full"] }
+sled = { version = "0.34.7", features = ["compression"] }
+uuid = { version = "1.2.1", features = ["v4"] }
+serde = { version = "1.0.147", features = ["derive"] }
+serde-binary = "0.4.0"
+
+#[dependencies.yggdrasil-error]
+#version = "0.1.2"
+#git = "https://github.com/ygg-lang/yggdrasil-rs"
+#rev = "bf5c6322"
+#features = ["sled"]
+
+[dev-dependencies]
+
+[features]
+default = []
