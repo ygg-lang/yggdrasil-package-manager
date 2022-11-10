@@ -10,18 +10,13 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
-tokio = { version = "1.21.2", features = ["full"] }
-sled = { version = "0.34.7", features = ["compression"] }
+sled = { version = "0.34.7", features = [] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde-binary = "0.4.0"
 
-#[dependencies.yggdrasil-error]
-#version = "0.1.2"
-#git = "https://github.com/ygg-lang/yggdrasil-rs"
-#rev = "bf5c6322"
-#features = ["sled"]
-
 [dev-dependencies]
+
 
 [features]
 default = []
+compression = ["sled/compression"]

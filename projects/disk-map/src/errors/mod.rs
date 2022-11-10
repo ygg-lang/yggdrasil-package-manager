@@ -14,7 +14,7 @@ pub enum DictError {
     KeyNotFound,
 }
 
-pub type DictResult<T = ()> = Result<T, DictError>;
+pub type Result<T = ()> = std::result::Result<T, DictError>;
 
 impl Display for DictError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -23,14 +23,7 @@ impl Display for DictError {
                 write!(f, "IO Error: {e}")
             }
             DictError::CustomError(e) => f.write_str(e),
-            DictError::KeyNotFound => match String::from_utf8(v.clone()) {
-                Ok(o) => {
-                    write!(f, "Key not found")
-                }
-                Err(_) => {
-                    write!(f, "Key {v:?} not found")
-                }
-            },
+            DictError::KeyNotFound => write!(f, "No such key"),
         }
     }
 }
