@@ -3,9 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use serde::Serialize;
 use serde_binary::{binary_stream::Endian, from_slice, to_vec};
 use sled::{Config, Db, IVec};
-use uuid::Uuid;
+
+use crate::{DictError::KeyNotFound, DictResult};
 
 pub struct DiskMap<K, V> {
     database: Db,
@@ -18,27 +20,36 @@ impl<K, V> Drop for DiskMap<K, V> {
     }
 }
 
-impl<K, V> DiskMap<K, V> {
-    pub fn new(path: &Path) -> Result<Self, sled::Error> {
+impl<K, V> DiskMap<K, V>
+where
+    K: AsRef<[u8]>,
+    V: Serialize,
+{
+    pub fn new(path: &Path) -> DictResult<Self> {
         let database = Config::default().use_compression(true).path(path).open()?;
         Ok(Self { database, typed: Default::default() })
     }
-    pub fn get(&self, key: K) -> Option<V> {
-        let value = self.database.get(key).ok()??;
-        cast_iv(value)
+    pub fn get(&self, key: K) -> DictResult<V> {
+        let k = key.as_ref();
+        match self.database.get(k)? {
+            Some(iv) => cast_iv(iv),
+            None => Err(KeyNotFound(k.to_vec())),
+        }
     }
-    pub fn insert(&self, key: K, value: V) -> Result<V, sled::Error> {
-        let v = to_vec(&value, Endian::Little).ok()?;
-        let iv = self.database.insert(key, v).ok()??;
-        cast_iv(iv)
+    pub fn insert(&self, key: K, value: V) -> DictResult<V> {
+        let v = to_vec(&value, Endian::Little)?;
+        match self.database.insert(key, &v)? {
+            Some(iv) => cast_iv(iv),
+            None => Err(KeyNotFound(v)),
+        }
     }
-    pub async fn flush(&self) -> Result<usize, sled::Error> {
+    pub async fn flush(&self) -> DictResult<usize> {
         Ok(self.database.flush_async().await?)
     }
 }
 
-fn cast_iv(s: IVec) -> Option<V> {
-    from_slice(s.as_ref(), Endian::Little).ok()
+fn cast_iv<V>(s: IVec) -> DictResult<V> {
+    Ok(from_slice(s.as_ref(), Endian::Little)?)
 }
 
 #[tokio::test]

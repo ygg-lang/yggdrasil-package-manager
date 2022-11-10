@@ -12,7 +12,6 @@ edition = "2021"
 [dependencies]
 tokio = { version = "1.21.2", features = ["full"] }
 sled = { version = "0.34.7", features = ["compression"] }
-uuid = { version = "1.2.1", features = ["v4"] }
 serde = { version = "1.0.147", features = ["derive"] }
 serde-binary = "0.4.0"
 
