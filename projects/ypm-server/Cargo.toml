@@ -1,11 +1,11 @@
 [package]
-name = "sub_projects"
+name = "ypm-server"
 publish = false
 version = "0.0.0"
 authors = ["Aster <192607617@qq.com>"]
-description = "..."
-repository = "https://github.com/oovm/sub_projects"
-documentation = "https://docs.rs/sub_projects"
+description = "Yggdrasil Language Package Manager"
+repository = "https://github.com/ygg-lang/yggdrasil-package-manager"
+#documentation = "https://docs.rs/sub_projects"
 readme = "Readme.md"
 license = "MPL-2.0"
 edition = "2021"

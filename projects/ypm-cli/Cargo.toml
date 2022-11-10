@@ -1,0 +1,18 @@
+[package]
+name = "ypm"
+version = "0.0.0"
+authors = ["Aster <192607617@qq.com>"]
+description = "Yggdrasil Language Package Manager Client"
+repository = "https://github.com/ygg-lang/yggdrasil-package-manager"
+#documentation = "https://docs.rs/sub_projects"
+readme = "Readme.md"
+license = "MPL-2.0"
+edition = "2021"
+
+[dependencies]
+sled = "0.34.7"
+
+[dev-dependencies]
+
+[features]
+default = []
