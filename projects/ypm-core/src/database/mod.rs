@@ -1,53 +1,69 @@
+use std::collections::BTreeMap;
+use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 
-use sled::{Config, Db};
+use serde::{Deserialize, Serialize};
+use serde_binary::{from_slice, to_vec};
+use serde_binary::binary_stream::Endian;
+use sled::{Config, Db, IVec};
+use uuid::Uuid;
 use yggdrasil_error::YggdrasilResult;
 
-pub struct FileID(u128);
-
-pub struct FilesManager {
+pub struct PackageObjectManager {
     database: Db,
+    phantom_dict: PhantomData<BTreeMap<Uuid, PackageObject>>,
 }
 
-impl FilesManager {
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+pub struct PackageObject {}
+
+impl Drop for PackageObjectManager {
+    fn drop(&mut self) {
+        match self.database.flush() {
+            Ok(e) => {
+                print!("FilesManager flush {e} bytes")
+            }
+            Err(e) => {
+                eprintln!("FilesManager drop error. {e}")
+            }
+        }
+    }
+}
+
+impl PackageObjectManager {
     pub fn new(dir: &Path) -> YggdrasilResult<Self> {
         let path = dir.join("files");
         let db = Config::default().use_compression(true).path(path).open()?;
         Ok(Self {
-            database: db
+            database: db,
+            phantom_dict: Default::default(),
         })
     }
-}
-
-
-impl FilesManager {
-    async fn test(&self) -> YggdrasilResult {
-        let tree = &self.database;
-
-// insert and get, similar to std's BTreeMap
-        let old_value = tree.insert("key", "value")?;
-
-        assert_eq!(
-            tree.get(&"key")?,
-            Some(sled::IVec::from("value")),
-        );
-
-
-        for kv_result in tree.range("key_1".."key_9") {}
-        let old_value = tree.remove(&"key")?;
-        tree.compare_and_swap(
-            "key",
-            Some("current_value"),
-            Some("new_value"),
-        )??;
-        tree.flush_async().await?;
-        Ok(())
+    pub fn get(&self, key: Uuid) -> Option<PackageObject> {
+        let value = self.database.get(key).ok()??;
+        Self::from_iv(value)
+    }
+    pub fn insert(&self, key: Uuid, value: PackageObject) -> Option<PackageObject> {
+        let value = to_vec(&value, Endian::Little).ok()?;
+        let value = self.database.insert(key, value).ok()??;
+        Self::from_iv(value)
+    }
+    pub async fn flush(&self) -> YggdrasilResult<usize> {
+        Ok(self.database.flush_async().await?)
+    }
+    fn from_iv(s: IVec) -> Option<PackageObject> {
+        from_slice(s.as_ref(), Endian::Little).ok()
     }
 }
 
 #[tokio::test]
-async fn test() {
+async fn test_files() {
     let path = PathBuf::from("sqlite");
-    let file = FilesManager::new(&path).unwrap();
-    file.test().await.unwrap()
+    let file_db = PackageObjectManager::new(&path).unwrap();
+    let key = Uuid::new_v4();
+    let value = PackageObject {};
+    file_db.insert(key, value);
+    println!("{:?}", file_db.get(key));
+
+    // file_db.test().await.unwrap()
 }
