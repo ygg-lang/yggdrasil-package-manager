@@ -1,16 +1,16 @@
-use std::collections::BTreeMap;
-use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
+use std::{
+    marker::PhantomData,
+    path::{Path, PathBuf},
+};
 
 use serde::{Deserialize, Serialize};
-use serde_binary::{from_slice, to_vec};
-use serde_binary::binary_stream::Endian;
+use serde_binary::{binary_stream::Endian, from_slice, to_vec};
 use sled::{Config, Db, IVec};
 use uuid::Uuid;
 use yggdrasil_error::YggdrasilResult;
 
 pub struct PackageObjectManager {
-    database: PersistenceMap<Uuid, PackageObject>
+    database: PersistenceMap<Uuid, PackageObject>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
@@ -38,10 +38,7 @@ impl<K, V> PersistenceMap<K, V> {
     pub fn new(dir: &Path, name: &str) -> YggdrasilResult<Self> {
         let path = dir.join(name);
         let database = Config::default().use_compression(true).path(path).open()?;
-        Ok(Self {
-            database,
-            typed: Default::default()
-        })
+        Ok(Self { database, typed: Default::default() })
     }
     pub fn get(&self, key: K) -> Option<V> {
         let value = self.database.get(key).ok()??;
@@ -64,10 +61,7 @@ impl PackageObjectManager {
     pub fn new(dir: &Path) -> YggdrasilResult<Self> {
         let path = dir.join("files");
         let db = Config::default().use_compression(true).path(path).open()?;
-        Ok(Self {
-            database: db,
-            phantom_dict: Default::default(),
-        })
+        Ok(Self { database: db, phantom_dict: Default::default() })
     }
     pub fn get(&self, key: Uuid) -> Option<PackageObject> {
         let value = self.database.get(key).ok()??;
